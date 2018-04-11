@@ -24,10 +24,6 @@ public class DeviceScanResult {
         }
     }
 
-    public ScanResult getScanResult() {
-        return mScanResult;
-    }
-
     public String getDeviceName() {
         return mScanResult.getDevice().getName();
     }
@@ -36,7 +32,7 @@ public class DeviceScanResult {
         return mScanResult.getDevice().getAddress();
     }
 
-    public String getDeviceRssi() {
+    public String getRssi() {
         return String.valueOf(mScanResult.getRssi());
     }
 }

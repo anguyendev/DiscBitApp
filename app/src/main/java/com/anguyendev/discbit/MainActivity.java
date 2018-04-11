@@ -34,13 +34,9 @@ public class MainActivity extends AppCompatActivity{
     private static final int SCAN_PERIOD = 10000;
 
     // Views
-    private Button mSearchButton;
+    private Button mScanButton;
     private RecyclerView mRecyclerView;
-    private TextView mNoDevicesText;
-
-    // Recycler view objects
-    private RecyclerView.Adapter mRecyclerViewAdapater;
-    private RecyclerView.LayoutManager mLayoutManager;
+    private TextView mInfoText;
 
     // BLE objects
     private BluetoothAdapter mBluetoothAdapter;
@@ -49,7 +45,6 @@ public class MainActivity extends AppCompatActivity{
     private ArrayList<ScanFilter> mFilters;
 
     private DeviceListAdapter mDeviceListAdapter;
-    private ArrayList<DeviceScanResult> mDeviceList = new ArrayList<>();
 
     private Handler mHandler = new Handler();
 
@@ -57,14 +52,7 @@ public class MainActivity extends AppCompatActivity{
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
             DeviceScanResult deviceScanResult = new DeviceScanResult(result);
-            if (!mDeviceList.contains(deviceScanResult)) {
-                mDeviceList.add(deviceScanResult);
-                mDeviceListAdapter.notifyDataSetChanged();
-            } else {
-                int deviceIndex = mDeviceList.indexOf(deviceScanResult);
-                mDeviceList.set(deviceIndex, deviceScanResult);
-                mDeviceListAdapter.notifyItemChanged(deviceIndex);
-            }
+            mDeviceListAdapter.add(deviceScanResult);
             Log.d(APP_TAG, "BLE Device found: " + result.getDevice().getAddress());
         }
 
@@ -86,13 +74,13 @@ public class MainActivity extends AppCompatActivity{
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mNoDevicesText = findViewById(R.id.no_devices_text);
+        mInfoText = findViewById(R.id.no_devices_text);
 
         // Set the recycler view adapter
         mRecyclerView = findViewById(R.id.device_list_recycler_view);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         mRecyclerView.addItemDecoration(new DividerItemDecoration(this, LinearLayout.VERTICAL));
-        mDeviceListAdapter = new DeviceListAdapter(mDeviceList);
+        mDeviceListAdapter = new DeviceListAdapter();
         mRecyclerView.setAdapter(mDeviceListAdapter);
 
         // Get the bluetooth adapter
@@ -108,12 +96,11 @@ public class MainActivity extends AppCompatActivity{
         mFilters = new ArrayList<>();
 
         // Set a click listener on the search button
-        mSearchButton = findViewById(R.id.search_button);
-        mSearchButton.setOnClickListener(new View.OnClickListener() {
+        mScanButton = findViewById(R.id.scan_button);
+        mScanButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mDeviceList.clear();
-                mDeviceListAdapter.notifyDataSetChanged();
+                mDeviceListAdapter.clear();
                 scanLeDevice(true);
             }
         });
@@ -122,7 +109,6 @@ public class MainActivity extends AppCompatActivity{
     @Override
     protected void onResume(){
         super.onResume();
-        setDeviceListVisible(!mDeviceList.isEmpty());
         if (mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
@@ -141,7 +127,11 @@ public class MainActivity extends AppCompatActivity{
     protected void onActivityResult (int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_ENABLE_BT) {
             if (resultCode != RESULT_OK) {
-                mSearchButton.setEnabled(false);
+                updateView(false, false,
+                        getString(R.string.bluetooth_disabled));
+            } else {
+                updateView(false, true,
+                        getString(R.string.no_devices_text));
             }
         }
     }
@@ -153,27 +143,45 @@ public class MainActivity extends AppCompatActivity{
                 public void run() {
                     Log.d(APP_TAG, "Done scanning for BLE devices");
                     mLEScanner.stopScan(mScanCallback);
-                    setDeviceListVisible(!mDeviceList.isEmpty());
+                    updateView(!mDeviceListAdapter.isEmpty());
                 }
             }, SCAN_PERIOD);
             Log.d(APP_TAG, "Scanning for BLE devices");
-            setDeviceListVisible(true);
+            updateView(true, false);
             mLEScanner.startScan(mFilters, mScanSettings, mScanCallback);
         } else {
             mLEScanner.stopScan(mScanCallback);
-            setDeviceListVisible(!mDeviceList.isEmpty());
+            updateView(!mDeviceListAdapter.isEmpty());
         }
     }
 
-    private void setDeviceListVisible(boolean visible)
+    private void updateView(boolean deviceListVisible, boolean scanButtonActive, String infoText)
     {
-        if (visible) {
+        if (deviceListVisible) {
             mRecyclerView.setVisibility(View.VISIBLE);
-            mNoDevicesText.setVisibility(View.GONE);
+            mInfoText.setVisibility(View.GONE);
         } else {
             mRecyclerView.setVisibility(View.GONE);
-            mNoDevicesText.setVisibility(View.VISIBLE);
+            mInfoText.setText(infoText);
+            mInfoText.setVisibility(View.VISIBLE);
         }
+
+        mScanButton.setEnabled(scanButtonActive);
+        if (scanButtonActive) {
+            mScanButton.setText(R.string.scan);
+        } else {
+            mScanButton.setText(R.string.scanning);
+        }
+    }
+
+    private void updateView(boolean deviceListVisible, boolean scanButtonActive)
+    {
+        updateView(deviceListVisible, scanButtonActive, null);
+    }
+
+    private void updateView(boolean deviceListVisible)
+    {
+        updateView(deviceListVisible, true, null);
     }
 
 }

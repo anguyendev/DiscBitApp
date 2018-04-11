@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">DiscBit</string>
+    <string name="no_devices_text">No devices.</string>
+    <string name="bluetooth_disabled">Enable bluetooth to scan for devices.</string>
+    <string name="scanning">Scanning...</string>
+    <string name="scan">Scan</string>
+    <string name="device_name">(%s)</string>
+    <string name="rssi">rssi: </string>
 </resources>
