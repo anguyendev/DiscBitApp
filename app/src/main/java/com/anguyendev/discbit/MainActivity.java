@@ -1,6 +1,7 @@
 package com.anguyendev.discbit;
 
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
@@ -24,7 +25,7 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity{
+public class MainActivity extends AppCompatActivity implements DeviceListAdapter.DeviceListClickListener{
 
     //TODO ask for permission the proper way
 
@@ -80,7 +81,7 @@ public class MainActivity extends AppCompatActivity{
         mRecyclerView = findViewById(R.id.device_list_recycler_view);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         mRecyclerView.addItemDecoration(new DividerItemDecoration(this, LinearLayout.VERTICAL));
-        mDeviceListAdapter = new DeviceListAdapter();
+        mDeviceListAdapter = new DeviceListAdapter(this);
         mRecyclerView.setAdapter(mDeviceListAdapter);
 
         // Get the bluetooth adapter
@@ -101,7 +102,7 @@ public class MainActivity extends AppCompatActivity{
             @Override
             public void onClick(View v) {
                 mDeviceListAdapter.clear();
-                scanLeDevice(true);
+                startScan();
             }
         });
     }
@@ -119,7 +120,7 @@ public class MainActivity extends AppCompatActivity{
     protected void onPause() {
         super.onPause();
         if (mBluetoothAdapter != null && mBluetoothAdapter.isEnabled()) {
-            scanLeDevice(false);
+            stopScan();
         }
     }
 
@@ -136,27 +137,32 @@ public class MainActivity extends AppCompatActivity{
         }
     }
 
-    private void scanLeDevice(final boolean enable) {
-        if (enable) {
-            mHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    Log.d(APP_TAG, "Done scanning for BLE devices");
-                    mLEScanner.stopScan(mScanCallback);
-                    updateView(!mDeviceListAdapter.isEmpty());
-                }
-            }, SCAN_PERIOD);
-            Log.d(APP_TAG, "Scanning for BLE devices");
-            updateView(true, false);
-            mLEScanner.startScan(mFilters, mScanSettings, mScanCallback);
-        } else {
-            mLEScanner.stopScan(mScanCallback);
-            updateView(!mDeviceListAdapter.isEmpty());
-        }
+    @Override
+    public void onDeviceListItemSelected(BluetoothDevice bluetoothDevice) {
+        Log.d(APP_TAG, "Device selected: " + bluetoothDevice.getAddress());
+        stopScan();
     }
 
-    private void updateView(boolean deviceListVisible, boolean scanButtonActive, String infoText)
-    {
+
+    private void startScan() {
+        mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                Log.d(APP_TAG, "Done scanning for BLE devices");
+                stopScan();
+            }}, SCAN_PERIOD);
+
+        Log.d(APP_TAG, "Scanning for BLE devices");
+        updateView(true, false);
+        mLEScanner.startScan(mFilters, mScanSettings, mScanCallback);
+    }
+
+    private void stopScan() {
+        mLEScanner.stopScan(mScanCallback);
+        updateView(!mDeviceListAdapter.isEmpty(), true, getString(R.string.no_devices_text));
+    }
+
+    private void updateView(boolean deviceListVisible, boolean scanButtonActive, String infoText) {
         if (deviceListVisible) {
             mRecyclerView.setVisibility(View.VISIBLE);
             mInfoText.setVisibility(View.GONE);
@@ -174,14 +180,7 @@ public class MainActivity extends AppCompatActivity{
         }
     }
 
-    private void updateView(boolean deviceListVisible, boolean scanButtonActive)
-    {
+    private void updateView(boolean deviceListVisible, boolean scanButtonActive) {
         updateView(deviceListVisible, scanButtonActive, null);
     }
-
-    private void updateView(boolean deviceListVisible)
-    {
-        updateView(deviceListVisible, true, null);
-    }
-
 }

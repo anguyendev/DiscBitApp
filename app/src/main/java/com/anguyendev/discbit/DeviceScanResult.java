@@ -1,5 +1,6 @@
 package com.anguyendev.discbit;
 
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.le.ScanResult;
 
 public class DeviceScanResult {
@@ -34,5 +35,9 @@ public class DeviceScanResult {
 
     public String getRssi() {
         return String.valueOf(mScanResult.getRssi());
+    }
+
+    public BluetoothDevice getBluetoothDevice() {
+        return mScanResult.getDevice();
     }
 }

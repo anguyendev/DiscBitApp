@@ -1,9 +1,11 @@
 package com.anguyendev.discbit;
 
+import android.bluetooth.BluetoothDevice;
 import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
@@ -12,21 +14,35 @@ import java.util.ArrayList;
 public class DeviceListAdapter extends RecyclerView.Adapter<DeviceListAdapter.ViewHolder>{
 
     private ArrayList<DeviceScanResult> mScanResults;
+    private DeviceListClickListener mDeviceListClickListener;
 
-    public static class ViewHolder extends RecyclerView.ViewHolder {
+    public interface DeviceListClickListener
+    {
+        void onDeviceListItemSelected(BluetoothDevice bluetoothDevice);
+    }
+
+    class ViewHolder extends RecyclerView.ViewHolder {
         private TextView mDeviceName;
         private TextView mDeviceAddress;
         private TextView mDeviceRSSI;
-        private ViewHolder(ConstraintLayout view) {
+        private ViewHolder(ConstraintLayout view, final DeviceListClickListener clickListener) {
             super(view);
+            view.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    clickListener.onDeviceListItemSelected(
+                            mScanResults.get(getAdapterPosition()).getBluetoothDevice());
+                }
+            });
             mDeviceName = view.findViewById(R.id.device_list_name_text);
             mDeviceAddress = view.findViewById(R.id.device_list_address_text);
             mDeviceRSSI = view.findViewById(R.id.device_list_rssi_text);
         }
     }
 
-    public DeviceListAdapter() {
+    public DeviceListAdapter(DeviceListClickListener deviceListClickListener) {
         mScanResults = new ArrayList<>();
+        mDeviceListClickListener = deviceListClickListener;
     }
 
     @NonNull
@@ -37,7 +53,7 @@ public class DeviceListAdapter extends RecyclerView.Adapter<DeviceListAdapter.Vi
         ConstraintLayout v = (ConstraintLayout) LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.ble_device_list_item, parent, false);
 
-        return new ViewHolder(v);
+        return new ViewHolder(v, mDeviceListClickListener);
     }
 
     @Override
@@ -55,8 +71,7 @@ public class DeviceListAdapter extends RecyclerView.Adapter<DeviceListAdapter.Vi
         return mScanResults.size();
     }
 
-    public void add(DeviceScanResult deviceScanResult)
-    {
+    public void add(DeviceScanResult deviceScanResult) {
         if (!mScanResults.contains(deviceScanResult)) {
             mScanResults.add(deviceScanResult);
             notifyItemInserted(mScanResults.indexOf(deviceScanResult));
@@ -67,13 +82,11 @@ public class DeviceListAdapter extends RecyclerView.Adapter<DeviceListAdapter.Vi
         }
     }
 
-    public boolean isEmpty()
-    {
+    public boolean isEmpty() {
         return mScanResults.isEmpty();
     }
 
-    public void clear()
-    {
+    public void clear() {
         mScanResults.clear();
         notifyDataSetChanged();
     }
