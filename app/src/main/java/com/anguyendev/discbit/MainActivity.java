@@ -141,6 +141,9 @@ public class MainActivity extends AppCompatActivity implements DeviceListAdapter
     public void onDeviceListItemSelected(BluetoothDevice bluetoothDevice) {
         Log.d(APP_TAG, "Device selected: " + bluetoothDevice.getAddress());
         stopScan();
+        Intent connectIntent = new Intent(this, ConnectActivity.class);
+        connectIntent.putExtra("btdevice", bluetoothDevice);
+        startActivity(connectIntent);
     }
 
 
