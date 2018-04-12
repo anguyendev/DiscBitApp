@@ -58,9 +58,10 @@ public class DeviceListAdapter extends RecyclerView.Adapter<DeviceListAdapter.Vi
 
     @Override
     public void onBindViewHolder(@NonNull DeviceListAdapter.ViewHolder holder, int position) {
-        if(mScanResults.get(position).getDeviceName() != null)
-        {
+        if(mScanResults.get(position).getDeviceName() != null) {
             holder.mDeviceName.setText("(" + mScanResults.get(position).getDeviceName() + ")");
+        } else {
+            holder.mDeviceName.setText("");
         }
         holder.mDeviceAddress.setText(mScanResults.get(position).getDeviceAddress());
         holder.mDeviceRSSI.setText("RSSI: " + mScanResults.get(position).getRssi());
