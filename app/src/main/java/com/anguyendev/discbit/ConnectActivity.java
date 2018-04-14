@@ -2,83 +2,50 @@ package com.anguyendev.discbit;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothGatt;
-import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattService;
-import android.bluetooth.BluetoothProfile;
+import android.bluetooth.BluetoothGattDescriptor;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
-import android.widget.Toast;
 
-import java.util.List;
+import java.util.Queue;
+import java.util.UUID;
 
-public class ConnectActivity extends Activity {
+public class ConnectActivity extends Activity implements BleManager.BleManagerListener, BleUtils.ResetBluetoothAdapterListener{
+
+    // UUIDs for UART service and associated characteristics.
+    public static UUID UART_UUID = UUID.fromString("6E400001-B5A3-F393-E0A9-E50E24DCCA9E");
+    public static UUID TX_UUID   = UUID.fromString("6E400002-B5A3-F393-E0A9-E50E24DCCA9E");
+    public static UUID RX_UUID   = UUID.fromString("6E400003-B5A3-F393-E0A9-E50E24DCCA9E");
+
+    // UUID for the UART BTLE client characteristic which is necessary for notifications.
+    public static UUID CLIENT_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
+
+    // UUIDs for the Device Information service and associated characeristics.
+    public static UUID DIS_UUID       = UUID.fromString("0000180a-0000-1000-8000-00805f9b34fb");
+    public static UUID DIS_MANUF_UUID = UUID.fromString("00002a29-0000-1000-8000-00805f9b34fb");
+    public static UUID DIS_MODEL_UUID = UUID.fromString("00002a24-0000-1000-8000-00805f9b34fb");
+    public static UUID DIS_HWREV_UUID = UUID.fromString("00002a26-0000-1000-8000-00805f9b34fb");
+    public static UUID DIS_SWREV_UUID = UUID.fromString("00002a28-0000-1000-8000-00805f9b34fb");
+
+    private Queue<BluetoothGattCharacteristic> readQueue;
 
     private BluetoothDevice mBluetoothDevice;
-    private Handler mHandler = new Handler();
-    private BluetoothGatt mGatt;
-
-    private final Runnable mRunnable = new Runnable() {
-        @Override
-        public void run() {
-
-        }
-    };
-
-    public void connectToDevice(BluetoothDevice device) {
-        if (mGatt == null) {
-            mGatt = device.connectGatt(this, false, gattCallback);
-        }
-    }
-
-    private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
-        @Override
-        public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-            Log.i("onConnectionStateChange", "Status: " + status);
-            switch (newState) {
-                case BluetoothProfile.STATE_CONNECTED:
-                    Log.i("gattCallback", "STATE_CONNECTED");
-                    gatt.discoverServices();
-                    Toast.makeText(getApplicationContext(), "connected!", Toast.LENGTH_SHORT).show();
-                    break;
-                case BluetoothProfile.STATE_DISCONNECTED:
-                    Log.e("gattCallback", "STATE_DISCONNECTED");
-                    break;
-                default:
-                    Log.e("gattCallback", "STATE_OTHER");
-                    Toast.makeText(getApplicationContext(), "state: " +String.valueOf(newState), Toast.LENGTH_SHORT).show();
-            }
-
-        }
-
-        @Override
-        public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-            List<BluetoothGattService> services = gatt.getServices();
-            Log.i("onServicesDiscovered", services.toString());
-            gatt.readCharacteristic(services.get(1).getCharacteristics().get
-                    (0));
-        }
-
-        @Override
-        public void onCharacteristicRead(BluetoothGatt gatt,
-                                         BluetoothGattCharacteristic characteristic, int status) {
-            Log.i("onCharacteristicRead", characteristic.toString());
-            gatt.disconnect();
-        }
-    };
+    private BleManager mBleManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_connect);
+
+        mBleManager = BleManager.getInstance(this);
+        mBleManager.setBleListener(this);
+
         Bundle extras = getIntent().getExtras();
         if (extras != null)
         {
             mBluetoothDevice = extras.getParcelable("btdevice");
+            mBleManager.connect(this, mBluetoothDevice.getAddress());
         }
-        connectToDevice(mBluetoothDevice);
     }
 
     @Override
@@ -92,12 +59,54 @@ public class ConnectActivity extends Activity {
     }
 
     @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        mBleManager.disconnect();
+    }
+
+    @Override
     protected void onDestroy() {
-        if (mGatt == null) {
-            return;
-        }
-        mGatt.close();
-        mGatt = null;
         super.onDestroy();
+    }
+
+    @Override
+    public void resetBluetoothCompleted() {
+        Log.d(getString(R.string.app_name), "resetBluetoothCompleted");
+    }
+
+    @Override
+    public void onConnected() {
+        Log.d(getString(R.string.app_name), "onConnected");
+    }
+
+    @Override
+    public void onConnecting() {
+        Log.d(getString(R.string.app_name), "onConnecting");
+    }
+
+    @Override
+    public void onDisconnected() {
+        Log.d(getString(R.string.app_name), "onDisconnected");
+    }
+
+    @Override
+    public void onServicesDiscovered() {
+        Log.d(getString(R.string.app_name), "onServicesDiscovered");
+
+    }
+
+    @Override
+    public void onDataAvailable(BluetoothGattCharacteristic characteristic) {
+        Log.d(getString(R.string.app_name), "onDataAvailable");
+    }
+
+    @Override
+    public void onDataAvailable(BluetoothGattDescriptor descriptor) {
+        Log.d(getString(R.string.app_name), "onDataAvailable");
+    }
+
+    @Override
+    public void onReadRemoteRssi(int rssi) {
+        Log.d(getString(R.string.app_name), "onReadRemoteRssi");
     }
 }
