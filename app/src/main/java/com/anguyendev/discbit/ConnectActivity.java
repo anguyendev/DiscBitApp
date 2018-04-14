@@ -12,6 +12,8 @@ public class ConnectActivity extends Activity implements BleManager.BleManagerLi
     private BluetoothDevice mBluetoothDevice;
     private BleManager mBleManager;
 
+    private volatile int mReceivedBytes;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -80,6 +82,14 @@ public class ConnectActivity extends Activity implements BleManager.BleManagerLi
     @Override
     public void onDataAvailable(BluetoothGattCharacteristic characteristic) {
         Log.d(getString(R.string.app_name), "onDataAvailableChar");
+
+        if (characteristic.getService().getUuid().toString().equalsIgnoreCase(mBleManager.UART_UUID)) {
+            if (characteristic.getUuid().toString().equalsIgnoreCase(mBleManager.RX_UUID)) {
+                final byte[] bytes = characteristic.getValue();
+
+                Log.d(getString(R.string.app_name), BleUtils.bytesToText(bytes, true));
+            }
+        }
     }
 
     @Override
