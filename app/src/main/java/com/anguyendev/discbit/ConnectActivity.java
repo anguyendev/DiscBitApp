@@ -25,6 +25,8 @@ public class ConnectActivity extends Activity implements BleManager.BleManagerLi
         {
             mBluetoothDevice = extras.getParcelable("btdevice");
             mBleManager.connect(this, mBluetoothDevice.getAddress());
+
+
         }
     }
 
@@ -72,17 +74,17 @@ public class ConnectActivity extends Activity implements BleManager.BleManagerLi
     @Override
     public void onServicesDiscovered() {
         Log.d(getString(R.string.app_name), "onServicesDiscovered");
-
+        mBleManager.enableNotification(mBleManager.getGattService(mBleManager.UART_UUID), mBleManager.RX_UUID, true);
     }
 
     @Override
     public void onDataAvailable(BluetoothGattCharacteristic characteristic) {
-        Log.d(getString(R.string.app_name), "onDataAvailable");
+        Log.d(getString(R.string.app_name), "onDataAvailableChar");
     }
 
     @Override
     public void onDataAvailable(BluetoothGattDescriptor descriptor) {
-        Log.d(getString(R.string.app_name), "onDataAvailable");
+        Log.d(getString(R.string.app_name), "onDataAvailableDesc");
     }
 
     @Override
