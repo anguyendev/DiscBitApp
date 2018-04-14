@@ -17,7 +17,9 @@ import android.util.Log;
 
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class BleManager implements BleGattExecutor.BleExecutorListener {
     // Log
@@ -27,6 +29,29 @@ public class BleManager implements BleGattExecutor.BleExecutorListener {
     private static final int STATE_DISCONNECTED = 0;
     private static final int STATE_CONNECTING = 1;
     private static final int STATE_CONNECTED = 2;
+
+    // UUIDs for UART service and associated characteristics.
+    public static UUID UART_UUID = UUID.fromString("6E400001-B5A3-F393-E0A9-E50E24DCCA9E");
+    public static UUID TX_UUID   = UUID.fromString("6E400002-B5A3-F393-E0A9-E50E24DCCA9E");
+    public static UUID RX_UUID   = UUID.fromString("6E400003-B5A3-F393-E0A9-E50E24DCCA9E");
+
+    // UUID for the UART BTLE client characteristic which is necessary for notifications.
+    public static UUID CLIENT_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
+
+    // UUIDs for the Device Information service and associated characeristics.
+    public static UUID DIS_UUID       = UUID.fromString("0000180a-0000-1000-8000-00805f9b34fb");
+    public static UUID DIS_MANUF_UUID = UUID.fromString("00002a29-0000-1000-8000-00805f9b34fb");
+    public static UUID DIS_MODEL_UUID = UUID.fromString("00002a24-0000-1000-8000-00805f9b34fb");
+    public static UUID DIS_HWREV_UUID = UUID.fromString("00002a26-0000-1000-8000-00805f9b34fb");
+    public static UUID DIS_SWREV_UUID = UUID.fromString("00002a28-0000-1000-8000-00805f9b34fb");
+
+    private BluetoothGattCharacteristic disManuf;
+    private BluetoothGattCharacteristic disModel;
+    private BluetoothGattCharacteristic disHWRev;
+    private BluetoothGattCharacteristic disSWRev;
+    private boolean disAvailable;
+
+    private Queue<BluetoothGattCharacteristic> readQueue;
 
     // Singleton
     private static BleManager mInstance = null;
@@ -41,6 +66,9 @@ public class BleManager implements BleGattExecutor.BleExecutorListener {
     private int mConnectionState = STATE_DISCONNECTED;
 
     private BleManagerListener mBleListener;
+
+    private BluetoothGattCharacteristic tx;
+    private BluetoothGattCharacteristic rx;
 
     public static BleManager getInstance(Context context) {
         if (mInstance == null) {
@@ -74,6 +102,8 @@ public class BleManager implements BleGattExecutor.BleExecutorListener {
         if (mAdapter == null || !mAdapter.isEnabled()) {
             Log.e(TAG, "Unable to obtain a BluetoothAdapter.");
         }
+
+        readQueue = new ConcurrentLinkedQueue<BluetoothGattCharacteristic>();
     }
 
     /**
@@ -384,12 +414,58 @@ public class BleManager implements BleGattExecutor.BleExecutorListener {
     public void onServicesDiscovered(BluetoothGatt gatt, int status) {
         // if (status == BluetoothGatt.GATT_SUCCESS) {
         // Call listener
-        if (mBleListener != null)
+        if (mBleListener != null) {
             mBleListener.onServicesDiscovered();
-        // }
+        }
 
         if (status != BluetoothGatt.GATT_SUCCESS) {
             Log.d(TAG, "onServicesDiscovered status: " + status);
+        } else {
+
+            // Save reference to each UART characteristic.
+            tx = gatt.getService(UART_UUID).getCharacteristic(TX_UUID);
+            rx = gatt.getService(UART_UUID).getCharacteristic(RX_UUID);
+
+            // Save reference to each DIS characteristic.
+            disManuf = gatt.getService(DIS_UUID).getCharacteristic(DIS_MANUF_UUID);
+            disModel = gatt.getService(DIS_UUID).getCharacteristic(DIS_MODEL_UUID);
+            disHWRev = gatt.getService(DIS_UUID).getCharacteristic(DIS_HWREV_UUID);
+            disSWRev = gatt.getService(DIS_UUID).getCharacteristic(DIS_SWREV_UUID);
+
+            // Add device information characteristics to the read queue
+            // These need to be queued because we have to wait for the response to the first
+            // read request before a second one can be processed (which makes you wonder why they
+            // implemented this with async logic to begin with???)
+            readQueue.offer(disManuf);
+            readQueue.offer(disModel);
+            readQueue.offer(disHWRev);
+            readQueue.offer(disSWRev);
+
+            // Request a dummy read to get the device information queue going
+            gatt.readCharacteristic(disManuf);
+
+            // Setup notifications on RX characteristic changes (i.e. data received).
+            // First call setCharacteristicNotification to enable notification.
+            if (!gatt.setCharacteristicNotification(rx, true)) {
+                // Stop if the characteristic notification setup failed.
+                Log.d("DiscBit", "connectFailure - characteristic notification setup failed");
+                return;
+            }
+            // Next update the RX characteristic's client descriptor to enable notifications.
+            BluetoothGattDescriptor desc = rx.getDescriptor(CLIENT_UUID);
+            if (desc == null) {
+                // Stop if the RX characteristic has no client descriptor.
+                Log.d("DiscBit", "connectFailure - RX characteristic has no client");
+                return;
+            }
+            desc.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+            if (!gatt.writeDescriptor(desc)) {
+                // Stop if the client descriptor could not be written.
+                Log.d("DiscBit", "connectFailure - client descriptor could not be written");
+                return;
+            }
+            // Notify of connection completion.
+            Log.d("DiscBit", "notifyOnConnected");
         }
     }
 
