@@ -101,6 +101,7 @@ public class ConnectActivity extends Activity implements BleManager.BleManagerLi
         setContentView(R.layout.activity_connect);
         mConnectingLayout = findViewById(R.id.connecting_layout);
         mConnectedLayout = findViewById(R.id.connected_layout);
+        mSelectedSensor = SensorType.NONE;
 
         mLineChart = findViewById(R.id.lineChart);
         setUpGraph();
@@ -329,12 +330,11 @@ public class ConnectActivity extends Activity implements BleManager.BleManagerLi
 
         Utils.init(this);
 
-
         setUpAxisX();
         setUpAxisY();
 
-        setUpAccelerometerData();
-        mLineChart.setData(new LineData(mAccelerometerSetList));
+//        setUpAccelerometerData();
+//        mLineChart.setData(new LineData(mAccelerometerSetList));
 
     }
 
