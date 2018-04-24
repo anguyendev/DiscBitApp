@@ -7,4 +7,8 @@
     <string name="device_name">(%s)</string>
     <string name="rssi">rssi: </string>
     <string name="connecting">Connecting</string>
+    <string name="accelerometer">Accelerometer</string>
+    <string name="gyroscope">Gyroscope</string>
+    <string name="magnetometer">Magnetometer</string>
+    <string name="calculated">Calculated</string>
 </resources>
