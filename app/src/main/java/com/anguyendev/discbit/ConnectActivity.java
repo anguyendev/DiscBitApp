@@ -240,16 +240,16 @@ public class ConnectActivity extends Activity implements BleManager.BleManagerLi
                 break;
 
             case GYROSCOPE:
-                mGyroscopeDataSetX.addEntry(new Entry(mTimeCount, (float)discData.getAx()));
-                mGyroscopeDataSetY.addEntry(new Entry(mTimeCount, (float)discData.getAy()));
-                mGyroscopeDataSetZ.addEntry(new Entry(mTimeCount, (float)discData.getAz()));
+                mGyroscopeDataSetX.addEntry(new Entry(mTimeCount, (float)discData.getGx()));
+                mGyroscopeDataSetY.addEntry(new Entry(mTimeCount, (float)discData.getGy()));
+                mGyroscopeDataSetZ.addEntry(new Entry(mTimeCount, (float)discData.getGz()));
                 updateAxisMinMax();
                 break;
 
             case MAGNETOMETER:
-                mMagnetometerDataSetX.addEntry(new Entry(mTimeCount, (float)discData.getAx()));
-                mMagnetometerDataSetY.addEntry(new Entry(mTimeCount, (float)discData.getAy()));
-                mMagnetometerDataSetZ.addEntry(new Entry(mTimeCount, (float)discData.getAz()));
+                mMagnetometerDataSetX.addEntry(new Entry(mTimeCount, (float)discData.getMx()));
+                mMagnetometerDataSetY.addEntry(new Entry(mTimeCount, (float)discData.getMy()));
+                mMagnetometerDataSetZ.addEntry(new Entry(mTimeCount, (float)discData.getMz()));
                 updateAxisMinMax();
                 break;
         }
@@ -396,7 +396,7 @@ public class ConnectActivity extends Activity implements BleManager.BleManagerLi
         mGyroscopeDataSetY.setCircleColor(Color.GREEN);
         mGyroscopeDataSetY.setDrawCircleHole(false);
         mGyroscopeDataSetY.setDrawValues(false);
-        mGyroscopeSetList.add(mAccelerometerDataSetY);
+        mGyroscopeSetList.add(mGyroscopeDataSetY);
 
         mGyroscopeEntryListZ.clear();
         mGyroscopeEntryListZ.add(new Entry(0, 0));
