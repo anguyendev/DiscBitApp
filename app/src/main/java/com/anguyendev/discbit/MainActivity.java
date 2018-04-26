@@ -1,5 +1,6 @@
 package com.anguyendev.discbit;
 
+import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -10,8 +11,12 @@ import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
@@ -21,6 +26,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +38,7 @@ public class MainActivity extends AppCompatActivity implements DeviceListAdapter
     // Constants
     private static final String APP_TAG = "DiscBit";
     private static final int REQUEST_ENABLE_BT = 1;
+    private static final int REQUEST_LOCATION_PERMISSION = 2;
     private static final int SCAN_PERIOD = 10000;
 
     // Views
@@ -101,8 +108,10 @@ public class MainActivity extends AppCompatActivity implements DeviceListAdapter
         mScanButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mDeviceListAdapter.clear();
-                startScan();
+                if(checkLocationPermission()) {
+                    mDeviceListAdapter.clear();
+                    startScan();
+                }
             }
         });
     }
@@ -138,6 +147,22 @@ public class MainActivity extends AppCompatActivity implements DeviceListAdapter
     }
 
     @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String permissions[],
+                                           @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case REQUEST_LOCATION_PERMISSION: {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    mDeviceListAdapter.clear();
+                    startScan();
+                } else {
+                    Toast.makeText(this, "Permission denied. Unable to scan bluetooth sources.", Toast.LENGTH_LONG).show();
+                }
+            }
+        }
+    }
+
+    @Override
     public void onDeviceListItemSelected(BluetoothDevice bluetoothDevice) {
         Log.d(APP_TAG, "Device selected: " + bluetoothDevice.getAddress());
         stopScan();
@@ -146,6 +171,18 @@ public class MainActivity extends AppCompatActivity implements DeviceListAdapter
         startActivity(connectIntent);
     }
 
+    private Boolean checkLocationPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    REQUEST_LOCATION_PERMISSION
+            );
+            return false;
+        }
+        return true;
+    }
 
     private void startScan() {
         mHandler.postDelayed(new Runnable() {
