@@ -248,7 +248,6 @@ public class BleManager implements BleGattExecutor.BleExecutorListener {
     private void jsonObjectComplete() {
         try {
             String val = BleUtils.bytesToText(mByteArray, false);
-            Log.d("DiscBit", "Value: " + val);
             JSONObject jsonObject = new JSONObject(val);
             mBleListener.onDataAvailable(jsonObject);
         } catch (JSONException e) {

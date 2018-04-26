@@ -47,8 +47,7 @@ public class DeviceListAdapter extends RecyclerView.Adapter<DeviceListAdapter.Vi
 
     @NonNull
     @Override
-    public DeviceListAdapter.ViewHolder onCreateViewHolder(ViewGroup parent,
-                                                   int viewType) {
+    public DeviceListAdapter.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         // create a new view
         ConstraintLayout v = (ConstraintLayout) LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.ble_device_list_item, parent, false);
@@ -79,7 +78,7 @@ public class DeviceListAdapter extends RecyclerView.Adapter<DeviceListAdapter.Vi
         } else {
             int deviceIndex = mScanResults.indexOf(deviceScanResult);
             mScanResults.set(deviceIndex, deviceScanResult);
-            notifyItemChanged(deviceIndex);
+            notifyItemChanged(deviceIndex, "payload");
         }
     }
 

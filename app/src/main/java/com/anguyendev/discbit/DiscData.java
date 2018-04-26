@@ -3,8 +3,9 @@ package com.anguyendev.discbit;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class DiscData extends Object{
-    private  JSONObject jsonDiscData;
+public class DiscData {
+
+    private JSONObject jsonDiscData;
     private double ax, ay, az;
     private double gx, gy, gz;
     private double mx, my, mz;
